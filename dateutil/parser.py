@@ -265,20 +265,23 @@ class parserinfo(object):
             return 0
         return self.TZOFFSET.get(name)
 
-    def convertyear(self, year):
+    def convertyear(self, year, century_rule):
         if year < 100:
-            year += self._century
-            if abs(year-self._year) >= 50:
-                if year < self._year:
-                    year += 100
-                else:
-                    year -= 100
+            if century_rule:
+                year = century_rule(year)
+            else:
+                year += self._century
+                if abs(year-self._year) >= 50:
+                    if year < self._year:
+                        year += 100
+                    else:
+                        year -= 100
         return year
 
-    def validate(self, res):
+    def validate(self, res, century_rule):
         # move to info
         if res.year is not None:
-            res.year = self.convertyear(res.year)
+            res.year = self.convertyear(res.year, century_rule)
         if res.tzoffset == 0 and not res.tzname or res.tzname == 'Z':
             res.tzname = "UTC"
             res.tzoffset = 0
@@ -339,7 +342,7 @@ class parser(object):
                      "hour", "minute", "second", "microsecond",
                      "tzname", "tzoffset"]
 
-    def _parse(self, timestr, dayfirst=None, yearfirst=None, fuzzy=False):
+    def _parse(self, timestr, dayfirst=None, yearfirst=None, fuzzy=False, century_rule=None):
         info = self.info
         if dayfirst is None:
             dayfirst = info.dayfirst
@@ -685,7 +688,7 @@ class parser(object):
         except (IndexError, ValueError, AssertionError):
             return None
 
-        if not info.validate(res):
+        if not info.validate(res, century_rule):
             return None
         return res
 
